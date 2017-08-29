@@ -474,7 +474,7 @@ class ParameterSet(dict):
         if isinstance(ps, ParameterSet):
             return ps[split[1]]
         else: 
-            raise KeyError, "invalid parameter path for ParameterSet: %s" % name
+            raise KeyError("invalid parameter path for ParameterSet: %s" % name)
 
     def flat_add(self, name, value):
         """ Like `__setitem__`, but it will add `ParameterSet({})` objects
