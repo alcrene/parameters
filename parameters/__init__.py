@@ -468,13 +468,24 @@ class ParameterSet(dict):
         nested tree to find it"""
         split = name.split('.', 1)
         if len(split) == 1:
-            return dict.__getitem__(self, name)
-        # nested get
-        ps = dict.__getitem__(self, split[0])
-        if isinstance(ps, ParameterSet):
-            return ps[split[1]]
-        else: 
-            raise KeyError("invalid parameter path for ParameterSet: %s" % name)
+            item = dict.__getitem__(self, name)
+        else:
+            # nested get
+            ps = dict.__getitem__(self, split[0])
+            if isinstance(ps, ParameterSet):
+                item = ps[split[1]]
+            else:
+                raise KeyError("invalid parameter path for ParameterSet: %s" % name)
+        # Custom link dereferencing
+        if ( isinstance(item, str) and item[-2:] == '->' ) :
+            subitem = self[item[:-2]]
+            if isinstance(subitem, ParameterSet):
+                return subitem[name]
+            else:
+                raise KeyError("invalid parameter path for ParameterSet: %s" % name)
+        else:
+            return item
+
 
     def flat_add(self, name, value):
         """ Like `__setitem__`, but it will add `ParameterSet({})` objects
