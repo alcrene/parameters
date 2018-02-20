@@ -472,6 +472,9 @@ class ParameterSet(dict):
         else:
             # nested get
             ps = dict.__getitem__(self, split[0])
+            if isinstance(ps, str) and ps[-2:] == '->':
+                # Custom link dereferencing
+                ps = self[ps[:-2]][split[0]]
             if isinstance(ps, ParameterSet):
                 item = ps[split[1]]
             else:
