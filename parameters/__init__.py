@@ -489,6 +489,20 @@ class ParameterSet(dict):
         else:
             return item
 
+    def __eq__(self, o):
+        # Iterating through the components ourself allows to compare
+        # parameter sets containing values for which `a == b` is ambiguous,
+        # like numpy arrays
+        if (not isinstance(o, dict)
+            or sorted(self.keys()) != sorted(o.keys())):
+            return False
+        for k in self:
+            equal = (self[k] == o[k])
+            if hasattr(equal, 'all'):
+                equal = equal.all()  # Numpy arrays have `all()` method
+            if not equal:
+                return False
+        return True
 
     def flat_add(self, name, value):
         """ Like `__setitem__`, but it will add `ParameterSet({})` objects
@@ -589,6 +603,13 @@ class ParameterSet(dict):
                     s.append('%s"%s": %s,' % (indent, k, v))
             return '\n'.join(s)
         return '{\n' + walk(self, indent, indent) + '\n}'
+
+    def copy(self):
+        """
+        Return a shallow copy. Internally calls dict.copy and casts the result as
+        a ParameterSet.
+        """
+        return ParameterSet(super().copy())
 
     def tree_copy(self):
         """Return a copy of the `ParameterSet` tree structure.
