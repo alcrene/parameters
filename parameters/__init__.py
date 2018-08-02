@@ -197,7 +197,7 @@ def reverse(func):
     reversed_func.__doc__ = "Reversed argument form of %s" % func.__doc__
     reversed_func.__name__ = "reversed %s" % func.__name__
     return reversed_func
-    
+
 def lazy_operation(name, reversed=False):
     def op(self, val):
         f = getattr(operator, name)
@@ -213,12 +213,12 @@ class ParameterReference(object):
     later be replaced with the value of the parameter pointed to by the
     reference. This class also allows for lazy application of operations,
     meaning that one can use the reference in simple formulas that will get
-    evaluated at the moment the reference is replaced. 
-    
+    evaluated at the moment the reference is replaced.
+
     Check below which operations are supported.
     """
     def __init__(self,reference):
-        object.__init__(self)  
+        object.__init__(self)
         self.reference_path = reference
         self.operations = []
 
@@ -232,7 +232,7 @@ class ParameterReference(object):
             except TypeError:
                 raise TypeError("ParameterReference: error applying operation " + str(f) + " with argument " + str(arg) + " to " + str(x))
         return x
-    
+
     def evaluate(self,parameter_set):
         """
         This function evaluetes the reference, using the ParameterSet in parameter_set as the source.
@@ -242,7 +242,7 @@ class ParameterReference(object):
            if self.operations == []:
               return ref_value.tree_copy()
            else:
-              raise ValueError("ParameterReference: lazy operations cannot be applied to argument of type ParameterSet> %s" % self.reference_path) 
+              raise ValueError("ParameterReference: lazy operations cannot be applied to argument of type ParameterSet> %s" % self.reference_path)
         elif isinstance(ref_value,ParameterReference):
              #lets wait until the refe
              return self
@@ -253,9 +253,9 @@ class ParameterReference(object):
         pr = ParameterReference(self.reference_path)
         for f, arg in self.operations:
             if isinstance(arg,ParameterReference):
-               pr.operations.append((f,arg.copy())) 
+               pr.operations.append((f,arg.copy()))
             else:
-               pr.operations.append((f,arg))      
+               pr.operations.append((f,arg))
         return pr
     __add__  = lazy_operation('add')
     __radd__ = __add__
@@ -273,7 +273,7 @@ class ParameterReference(object):
 def load_parameters(parameter_url, modified_parameters):
     """
     This is a function that should be used to load a ParameterSet from a url.
-    
+
     `modified_parameters` should be a dictionary of parameters and their values.
     These will be replaced in the loaded parameter set before the references are
     expanded.
@@ -289,7 +289,7 @@ class ParameterSet(dict):
     A class to manage hierarchical parameter sets.
 
     Usage example::
-    
+
         >>> sim_params = ParameterSet({'dt': 0.1, 'tstop': 1000.0})
         >>> exc_cell_params = ParameterSet("http://neuralensemble.org/svn/NeuroTools/example.params")
         >>> inh_cell_params = ParameterSet({'tau_m': 15.0, 'cm': 0.5})
@@ -316,7 +316,7 @@ class ParameterSet(dict):
         `ParameterRange`, etc.  No other object types are allowed,
         except the function `url('some_url')` or `ref('point.delimited.path')`,
         e.g.::
-        
+
             { 'a' : {'A': 3, 'B': 4},
               'b' : [1,2,3],
               'c' : 'hello world',
@@ -507,7 +507,7 @@ class ParameterSet(dict):
 
     def update(self, E, **F):
         """docstring missing"""
-        if hasattr(E, "has_key"):
+        if hasattr(E, "keys"):
             for k in E:
                 self[k] = E[k]
         else:
@@ -585,7 +585,7 @@ class ParameterSet(dict):
             value = self[key]
             if isinstance(value, ParameterSet):
                 tmp[key] = value.tree_copy()
-            elif isinstance(value,ParameterReference):                
+            elif isinstance(value,ParameterReference):
                 tmp[key] = value.copy()
             else:
                 tmp[key] = value
@@ -652,7 +652,7 @@ class ParameterSet(dict):
         if format == 'latex':
             from .export import parameters_to_latex
             parameters_to_latex(filename, self, **kwargs)
-    
+
     def replace_references(self):
         while True:
             refs = self.find_references()
@@ -660,23 +660,23 @@ class ParameterSet(dict):
                 break
             for s, k, v in refs:
                 s[k] = v.evaluate(self)
-                    
-                    
+
+
     def find_references(self):
         l = []
         for k, v in self.items():
             if isinstance(v, ParameterReference):
                l += [(self, k, v)]
-            elif isinstance(v, ParameterSet):   
+            elif isinstance(v, ParameterSet):
                l += v.find_references()
-        return l    
-    
+        return l
+
     def replace_values(self,**args):
         """
         This expects its arguments to be in the form path=value, where path is a
         . (dot) delimited path to a parameter in the  parameter tree rooted in
-        this ParameterSet instance. 
-        
+        this ParameterSet instance.
+
         This function replaces the values of each parameter in the args with the
         corresponding values supplied in the arguments.
         """
