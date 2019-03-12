@@ -307,6 +307,9 @@ class ParameterSet(dict):
                                 'flatten', 'non_parameter_attributes']
     invalid_names = ['parameters', 'names']  # should probably add dir(dict)
 
+    _basepath = None
+    _basepath_set_by = None
+
     @staticmethod
     def read_from_str(s, update_namespace=None):
         """
@@ -365,7 +368,24 @@ class ParameterSet(dict):
         if k in ParameterSet.invalid_names:
             raise Exception("'%s' is not allowed as a parameter name." % k)
 
-    def __init__(self, initialiser, label=None, update_namespace=None):
+    def __init__(self, initialiser, label=None, update_namespace=None,
+                 basepath=None):
+        """
+        basepath: str
+            If provided, serves as base for relative paths.
+        """
+
+        # Set the base path as a class level instance, so that nested calls
+        # to ParameterSet (in particular those in read_from_str) can see it
+        # TODO: Use a context manager to ensure variable is unset ?
+        if basepath is not None:
+            assert(ParameterSet._basepath is None)
+            assert(ParameterSet._basepath_set_by is None)
+            ParameterSet._basepath = basepath
+            ParameterSet._basepath_set_by = self
+        elif ParameterSet._basepath is None:
+            ParameterSet._basepath = ""
+            ParameterSet._basepath_set_by = self
 
         def walk(d, label):
             # Iterate through the dictionary `d`, replacing `dict`s by
@@ -382,10 +402,12 @@ class ParameterSet(dict):
 
         self._url = None
         if isinstance(initialiser, basestring):  # url or str
-            if path.exists(initialiser):
-                f = open(initialiser, 'r')
+            initialiser_path = path.join(ParameterSet._basepath, initialiser)
+                # join drops `basepath` if `initialiser` is an absolute path
+            if path.exists(initialiser_path):
+                f = open(initialiser_path, 'r')
                 pstr = f.read()
-                self._url = initialiser
+                self._url = initialiser_path
                 f.close()
             else:
                 try:
@@ -440,6 +462,12 @@ class ParameterSet(dict):
         self.names = self.keys
         self.parameters = self.items
 
+        # Unset the base path
+        if ParameterSet._basepath_set_by is self:
+            ParameterSet._basepath = None
+            ParameterSet._basepath_set_by = None
+
+
     def flat(self):
         __doc__ = nesteddictwalk.__doc__
         return nesteddictwalk(self)
@@ -463,6 +491,16 @@ class ParameterSet(dict):
             # should we check the parameter type hasn't changed?
             self[name] = value
 
+    def __delitem__(self, name):
+        """Allow deleting items using dot notation."""
+        split = name.split('.', 1)
+        if len(split) == 1:
+            item = dict.__delitem__(self, name)
+        else:
+            # nested del
+            ps = dict.__getitem__(self, split[0])
+            del ps[split[1]]
+
     def __getitem__(self, name):
         """ Modified get that detects dots '.' in the names and goes down the
         nested tree to find it"""
@@ -474,18 +512,32 @@ class ParameterSet(dict):
             ps = dict.__getitem__(self, split[0])
             if isinstance(ps, str) and ps[-2:] == '->':
                 # Custom link dereferencing
-                ps = self[ps[:-2]][split[0]]
+                try:
+                    ps = self[ps[:-2]][split[0]]
+                except KeyError:
+                    # If the parameter set is malformed, it may contain a ref
+                    # to a non-existing entry. If this happens, just keep
+                    # the ref as-is, with the trailing '->'
+                    pass
             if isinstance(ps, ParameterSet):
                 item = ps[split[1]]
             else:
                 raise KeyError("invalid parameter path for ParameterSet: %s" % name)
         # Custom link dereferencing
         if ( isinstance(item, str) and item[-2:] == '->' ) :
-            subitem = self[item[:-2]]
+            subitem = self.get(item[:-2], None)
             if isinstance(subitem, ParameterSet):
-                return subitem[name]
+                try:
+                    return subitem[name]
+                except KeyError:
+                    return item
+                    # For same reason as below, don't want to return error
             else:
-                raise KeyError("invalid parameter path for ParameterSet: %s" % name)
+                return item
+                # This used to return an error, but there are cases where we
+                # don't want a malformed parameter set to cause a failure
+                # (E.g. when comparing parameter sets.)
+                #raise KeyError("invalid parameter path for ParameterSet: %s" % name)
         else:
             return item
 
@@ -531,6 +583,8 @@ class ParameterSet(dict):
             dict.__setitem__(self, name, value)
         else:
             # nested set
+            if split[0] not in self:
+                dict.__setitem__(self, split[0], ParameterSet({}))
             dict.__getitem__(self, split[0])[split[1]] = value
 
     def update(self, E, **F):
