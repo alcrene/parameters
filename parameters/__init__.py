@@ -463,6 +463,16 @@ class ParameterSet(dict):
             # should we check the parameter type hasn't changed?
             self[name] = value
 
+    def __delitem__(self, name):
+        """Allow deleting items using dot notation."""
+        split = name.split('.', 1)
+        if len(split) == 1:
+            item = dict.__delitem__(self, name)
+        else:
+            # nested del
+            ps = dict.__getitem__(self, split[0])
+            del ps[split[1]]
+
     def __getitem__(self, name):
         """ Modified get that detects dots '.' in the names and goes down the
         nested tree to find it"""
