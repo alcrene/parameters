@@ -8,7 +8,7 @@ Classes
 -------
 
 SchemaBase           - The base class of all "active" Schema objects to be placed in a ParameterSchema.
--> Sublass           - Validates the same-path ParameterSet value if it is of the specified type.
+-> Subclass          - Validates the same-path ParameterSet value if it is of the specified type.
 -> Eval              - Validates the same-path ParameterSet value if the provided expression
                        evaluates ("eval") to True.
 
@@ -23,7 +23,7 @@ ValidationError      - The Exception raised when validation fails
 Functions
 ---------
 
-congruent_dicts      - returns True if two nested dictionaries have the same key heirarchy,
+congruent_dicts      - returns True if two nested dictionaries have the same key hierarchy,
                        otherwise False.
 
 
@@ -143,7 +143,6 @@ class Eval(SchemaBase):
         else:
             return False
 
-
 # add all schema checkers to this list
 schema_checkers = [Subclass, Eval, StrictContentTypes]
 # create a namespace of schema_checkers
@@ -219,7 +218,7 @@ class ParameterSchema(ParameterSet):
         if isinstance(ps, ParameterSet):
             return ps[split[1]]
         else: 
-            raise KeyError, "invalid parameter path for ParameterSet: %s" % name
+            raise KeyError("invalid parameter path for ParameterSet: %s" % name)
 
 
 
@@ -277,7 +276,8 @@ class CongruencyValidator(object):
 
         """
 
-        ps = parameter_set
+        ps = (parameter_set if isinstance(parameter_set, ParameterSet)
+              else ParameterSet(parameter_set))
         schema = parameter_schema
 
         ps_keys = set()
@@ -302,7 +302,7 @@ class CongruencyValidator(object):
                 else:
                     for key in ps[base]:
                         ps_sub = ps[base][key]
-                        # if specific key is in schema continue, will be checked later specfically 
+                        # if specific key is in schema continue, will be checked later specfically
                         # by non wild card code, below
                         if key in schema[base]:
                             continue
@@ -330,9 +330,9 @@ class CongruencyValidator(object):
 
 
 def congruent_dicts(template, candidate, subset=False, parent_path=''):
-    """Return True if d1 and d2 have same key heirarchy, otherwise False
+    """Return True if d1 and d2 have same key hierarchy, otherwise False
 
-    if subset=True, the key heirarchy of d2 maybe a subset
+    if subset=True, the key hierarchy of d2 maybe a subset
     """
 
     dt = template
