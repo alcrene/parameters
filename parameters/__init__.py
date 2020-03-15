@@ -528,6 +528,8 @@ class ParameterSet(dict):
             dict.__setitem__(self, name, value)
         else:
             # nested set
+            if split[0] not in self:
+                dict.__setitem__(self, split[0], ParameterSet({}))
             dict.__getitem__(self, split[0])[split[1]] = value
 
     def update(self, E, **F):
