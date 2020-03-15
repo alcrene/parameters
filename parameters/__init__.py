@@ -47,7 +47,6 @@ Sub-Packages
 validators        - A module implementing validation of ParameterSets against ParameterSchema.
 
 """
-
 from __future__ import absolute_import
 import copy
 import warnings
@@ -61,6 +60,7 @@ except ImportError:
     from urllib.request import build_opener, install_opener, urlopen, ProxyHandler  # Python 3
     from urllib.parse import urlparse
 
+import sys
 from os import environ, path
 from .random import ParameterDist, GammaDist, UniformDist, NormalDist
 import random
@@ -329,6 +329,14 @@ class ParameterSet(dict):
         This is largely the JSON (www.json.org) format, but with
         extra keywords in the namespace such as `ParameterRange`, `GammaDist`, etc.
         """
+        # Support Numpy arrays
+        np = sys.modules.get('numpy', None)  # Don't load numpy if it isn't already
+        if np is not None:
+            array = np.array
+        else:
+            def array(x): raise NameError(
+                "'array' is undefined. Ensure numpy has been loaded before "
+                "constructing the ParameterSet.")
         global_dict = dict(ref=ParameterReference,
                            url=ParameterSet,
                            ParameterSet=ParameterSet,
@@ -340,6 +348,7 @@ class ParameterSet(dict):
                            pi=math.pi,
                            true=True,    # these are for reading JSON
                            false=False,  # files
+                           array=array   # Numpy arrays
                         )
         if update_namespace:
             global_dict.update(update_namespace)
@@ -600,7 +609,7 @@ class ParameterSet(dict):
         scheme, netloc, path, parameters, query, fragment = urlparse(url)
         if scheme == 'file' or (scheme == '' and netloc == ''):
             f = open(path, 'w')
-            f.write(self.pretty(expand_urls=expand_urls))
+            f.write(self.pretty(expand_urls=expand_urls, for_saving=True))
             f.close()
         else:
             if scheme:
@@ -609,11 +618,29 @@ class ParameterSet(dict):
             else:
                 raise Exception("No protocol (http, ftp, etc) specified.")
 
-    def pretty(self, indent='  ', expand_urls=False):
+    def pretty(self, indent='  ', expand_urls=False, for_saving=False):
         """
         Return a unicode string representing the structure of the `ParameterSet`.
         evaluating the string should recreate the object.
         """
+        # There are two issues with using str to store a numpy array
+        # 1. The string representation has no commas ([0 1 2]
+        #    instead of [0, 1, 2]), which prevents parsing
+        # 2. Both str() and repr(), when applied to large arrays,
+        #    show only the first and last elements, separated by
+        #    an ellipsis. This is useless for storing the array.
+        # We address this as follows:
+        #   - By disabling the numpy truncation within this function
+        #   - By using repr instead of str for numpy arrays
+        # Since it the str is 'pretty', we only do for saving (as opposed to
+        # displaying in an interactive session).
+        reprtypes = ()  # list of types to print using repr() instead of str()
+        npthreshold = None
+        np = sys.modules.get('numpy', None)  # Don't load numpy if it isn't already
+        if for_saving and np is not None:
+            npthreshold = np.get_printoptions()['threshold']
+            np.set_printoptions(threshold=sys.maxsize)
+            reprtypes += (np.ndarray,)
         def walk(d, indent, ind_incr):
             s = []
             for k, v in d.items():
@@ -626,10 +653,15 @@ class ParameterSet(dict):
                         s.append('%s},' % indent)
                 elif isinstance(v, basestring):
                     s.append('%s"%s": "%s",' % (indent, k, v))
+                elif for_saving and isinstance(v, reprtypes):
+                    s.append('%s"%s": %s,' % (indent, k, repr(v)))
                 else:  # what if we have a dict or ParameterSet inside a list? currently they are not expanded. Should they be?
                     s.append('%s"%s": %s,' % (indent, k, v))
             return '\n'.join(s)
-        return '{\n' + walk(self, indent, indent) + '\n}'
+        result = '{\n' + walk(self, indent, indent) + '\n}'
+        if npthreshold is not None:
+            np.set_printoptions(threshold=npthreshold)
+        return result
 
     def copy(self):
         """
