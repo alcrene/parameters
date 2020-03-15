@@ -307,6 +307,9 @@ class ParameterSet(dict):
                                 'flatten', 'non_parameter_attributes']
     invalid_names = ['parameters', 'names']  # should probably add dir(dict)
 
+    _basepath = None
+    _basepath_set_by = None
+
     @staticmethod
     def read_from_str(s, update_namespace=None):
         """
@@ -365,7 +368,24 @@ class ParameterSet(dict):
         if k in ParameterSet.invalid_names:
             raise Exception("'%s' is not allowed as a parameter name." % k)
 
-    def __init__(self, initialiser, label=None, update_namespace=None):
+    def __init__(self, initialiser, label=None, update_namespace=None,
+                 basepath=None):
+        """
+        basepath: str
+            If provided, serves as base for relative paths.
+        """
+
+        # Set the base path as a class level instance, so that nested calls
+        # to ParameterSet (in particular those in read_from_str) can see it
+        # TODO: Use a context manager to ensure variable is unset ?
+        if basepath is not None:
+            assert(ParameterSet._basepath is None)
+            assert(ParameterSet._basepath_set_by is None)
+            ParameterSet._basepath = basepath
+            ParameterSet._basepath_set_by = self
+        elif ParameterSet._basepath is None:
+            ParameterSet._basepath = ""
+            ParameterSet._basepath_set_by = self
 
         def walk(d, label):
             # Iterate through the dictionary `d`, replacing `dict`s by
@@ -382,10 +402,12 @@ class ParameterSet(dict):
 
         self._url = None
         if isinstance(initialiser, basestring):  # url or str
-            if path.exists(initialiser):
-                f = open(initialiser, 'r')
+            initialiser_path = path.join(ParameterSet._basepath, initialiser)
+                # join drops `basepath` if `initialiser` is an absolute path
+            if path.exists(initialiser_path):
+                f = open(initialiser_path, 'r')
                 pstr = f.read()
-                self._url = initialiser
+                self._url = initialiser_path
                 f.close()
             else:
                 try:
@@ -439,6 +461,12 @@ class ParameterSet(dict):
         # for name in P.names():
         self.names = self.keys
         self.parameters = self.items
+
+        # Unset the base path
+        if ParameterSet._basepath_set_by is self:
+            ParameterSet._basepath = None
+            ParameterSet._basepath_set_by = None
+
 
     def flat(self):
         __doc__ = nesteddictwalk.__doc__
