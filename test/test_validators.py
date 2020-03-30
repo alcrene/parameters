@@ -95,8 +95,8 @@ class ParameterSchemeTest(unittest.TestCase):
         """
 
 
-        s1 = ParameterSchema(yaml.load(s_str))
-        p1 = ParameterSet(yaml.load(p_str))
+        s1 = ParameterSchema(yaml.full_load(s_str))
+        p1 = ParameterSet(yaml.full_load(p_str))
 
         v = CongruencyValidator()
         # test Eval which checks for isinstance(x,list)
@@ -117,8 +117,8 @@ class ParameterSchemeTest(unittest.TestCase):
         """
 
 
-        s1 = ParameterSchema(yaml.load(s_str))
-        p1 = ParameterSet(yaml.load(p_str))
+        s1 = ParameterSchema(yaml.full_load(s_str))
+        p1 = ParameterSet(yaml.full_load(p_str))
 
         v = CongruencyValidator()
         # test Eval which checks for isinstance(x,list)
@@ -139,8 +139,8 @@ class ParameterSchemeTest(unittest.TestCase):
             <<ANY_KEY>>: ["MORPH_BASE_NAME", 1.0]
         """
 
-        s1 = ParameterSchema(yaml.load(s_str))
-        p1 = ParameterSet(yaml.load(p_str))
+        s1 = ParameterSchema(yaml.full_load(s_str))
+        p1 = ParameterSet(yaml.full_load(p_str))
 
         v = CongruencyValidator()
         self.assertRaises(ValidationError, v.validate, p1, s1, strict_tree=False)
@@ -162,8 +162,8 @@ class ParameterSchemeTest(unittest.TestCase):
             PROJ_POM: 1.0
         """
 
-        s1 = ParameterSchema(yaml.load(s_str))
-        p1 = ParameterSet(yaml.load(p_str))
+        s1 = ParameterSchema(yaml.full_load(s_str))
+        p1 = ParameterSet(yaml.full_load(p_str))
 
         v = CongruencyValidator()
         assert v.validate(p1,s1, strict_tree=False)==True
@@ -183,8 +183,8 @@ class ParameterSchemeTest(unittest.TestCase):
             <<ANY_KEY>>: ["MORPH_BASE_NAME", 1.0]
         """
 
-        s1 = ParameterSchema(yaml.load(s_str))
-        p1 = ParameterSet(yaml.load(p_str))
+        s1 = ParameterSchema(yaml.full_load(s_str))
+        p1 = ParameterSet(yaml.full_load(p_str))
 
         v = CongruencyValidator()
         # test Eval which checks for isinstance(x,list)
@@ -206,8 +206,8 @@ class ParameterSchemeTest(unittest.TestCase):
             <<ANY_KEY>>: !!python/object:parameters.validators.StrictContentTypes {val: ["",100.0] }
         """
 
-        s1 = ParameterSchema(yaml.load(s_str))
-        p1 = ParameterSet(yaml.load(p_str))
+        s1 = ParameterSchema(yaml.full_load(s_str))
+        p1 = ParameterSet(yaml.full_load(p_str))
 
         v = CongruencyValidator()
         # test Eval which checks for isinstance(x,list)
@@ -229,8 +229,8 @@ class ParameterSchemeTest(unittest.TestCase):
             <<ANY_KEY>>: ["MORPH_BASE_NAME", 1.0]
         """
 
-        s1 = ParameterSchema(yaml.load(s_str))
-        p1 = ParameterSet(yaml.load(p_str))
+        s1 = ParameterSchema(yaml.full_load(s_str))
+        p1 = ParameterSet(yaml.full_load(p_str))
 
         v = CongruencyValidator()
         # test Eval which checks for isinstance(x,list)
@@ -290,8 +290,8 @@ class ParameterSchemeTest(unittest.TestCase):
            float: !!python/object:parameters.validators.Subclass { type: !!python/name:float }
         """
 
-        schema = ParameterSchema(yaml.load(schema_str))
-        conf = ParameterSet(yaml.load(conf1_str))
+        schema = ParameterSchema(yaml.full_load(schema_str))
+        conf = ParameterSet(yaml.full_load(conf1_str))
 
         v = CongruencyValidator()
         assert v.validate(conf,schema)
@@ -339,7 +339,7 @@ class ParameterSchemeTest(unittest.TestCase):
         """
 
         def write_to_yaml_tf(s):
-            tf = tempfile.NamedTemporaryFile(suffix='.yaml')
+            tf = tempfile.NamedTemporaryFile(suffix='.yaml', mode='w')
             tf.writelines(s)
             tf.flush()
             tf.seek(0)
@@ -419,9 +419,9 @@ class ParameterSchemeTest(unittest.TestCase):
            all: null
         """
 
-        conf1 = yaml.load(conf1_str)
-        conf2 = yaml.load(conf2_str)
-        conf3 = yaml.load(conf3_str)
+        conf1 = yaml.full_load(conf1_str)
+        conf2 = yaml.full_load(conf2_str)
+        conf3 = yaml.full_load(conf3_str)
 
         assert congruent_dicts(conf1,conf2)
         # conf3 is subset of conf1 heirarchy, should return false
