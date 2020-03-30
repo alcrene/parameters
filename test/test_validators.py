@@ -3,8 +3,6 @@ Unit tests for the parameters.validators module
 
 Also see the doctests in doc/validation.txt
 """
-import matplotlib
-matplotlib.use('Agg')
 
 import parameters
 from parameters.random import GammaDist, UniformDist, NormalDist, ParameterDist
@@ -15,8 +13,8 @@ import types
 from copy import deepcopy
 import pickle
 
-import parameters.validators 
-from parameters.validators import congruent_dicts 
+import parameters.validators
+from parameters.validators import congruent_dicts
 from parameters import *
 
 import yaml
@@ -29,12 +27,12 @@ ps3 = ParameterSet({'hello': 'world', 'ps2': ps2, 'null': None,
                     'mydict': {'c': 3, 'd':4}, 'yourlist': [1,2,{'e':5, 'f':6}],
                     }, label="PS3")
 
-schema3 = ParameterSchema({'mylist': parameters.validators.Subclass(type=list), 
-                           'true': parameters.validators.Subclass(type=bool), 
-                           'yourlist': parameters.validators.Subclass(type=list), 
+schema3 = ParameterSchema({'mylist': parameters.validators.Subclass(type=list),
+                           'true': parameters.validators.Subclass(type=bool),
+                           'yourlist': parameters.validators.Subclass(type=list),
                            'ps2': {'ps': {'a':parameters.validators.Subclass(type=int),
                                           'b':parameters.validators.Subclass(type=int)},
-                                   'c': parameters.validators.Subclass(type=int)}, 
+                                   'c': parameters.validators.Subclass(type=int)},
                            'null': parameters.validators.Subclass(type=type(None)),
                            'mydict': {'c': parameters.validators.Subclass(type=int),
                                       'd': parameters.validators.Subclass(type=int)},
@@ -42,13 +40,13 @@ schema3 = ParameterSchema({'mylist': parameters.validators.Subclass(type=list),
 
 
 class ParameterSchemeTest(unittest.TestCase):
-    
+
     def test_simple_create(self):
         s1 = ParameterSchema({'age': 0, 'height': Subclass(float)})
-        # is equivalent to 
+        # is equivalent to
         s2 = ParameterSchema({'age': Subclass(int), 'height': Subclass(float)})
 
-        
+
         assert s1 == s2
 
 
@@ -95,8 +93,8 @@ class ParameterSchemeTest(unittest.TestCase):
         list: !!python/object:parameters.validators.Eval { expr: 'isinstance(x,list) and all([isinstance(elem,int) for elem in x])', var: 'x'}
         flist: !!python/object:parameters.validators.Eval { expr: 'isinstance(x,list) and all([isinstance(elem,float) for elem in x])', var: 'x'}
         """
-        
-        
+
+
         s1 = ParameterSchema(yaml.load(s_str))
         p1 = ParameterSet(yaml.load(p_str))
 
@@ -117,8 +115,8 @@ class ParameterSchemeTest(unittest.TestCase):
         s_str = """
         item: !!python/object:parameters.validators.Eval { expr: 'isinstance(x,dict) and all', var: 'x'}
         """
-        
-        
+
+
         s1 = ParameterSchema(yaml.load(s_str))
         p1 = ParameterSet(yaml.load(p_str))
 
@@ -137,10 +135,10 @@ class ParameterSchemeTest(unittest.TestCase):
         """
 
         s_str = """
-        item: 
+        item:
             <<ANY_KEY>>: ["MORPH_BASE_NAME", 1.0]
         """
-        
+
         s1 = ParameterSchema(yaml.load(s_str))
         p1 = ParameterSet(yaml.load(p_str))
 
@@ -159,11 +157,11 @@ class ParameterSchemeTest(unittest.TestCase):
         """
 
         s_str = """
-        item: 
+        item:
             <<ANY_KEY>>: ["MORPH_BASE_NAME", 1.0]
             PROJ_POM: 1.0
         """
-        
+
         s1 = ParameterSchema(yaml.load(s_str))
         p1 = ParameterSet(yaml.load(p_str))
 
@@ -181,10 +179,10 @@ class ParameterSchemeTest(unittest.TestCase):
         """
 
         s_str = """
-        item: 
+        item:
             <<ANY_KEY>>: ["MORPH_BASE_NAME", 1.0]
         """
-        
+
         s1 = ParameterSchema(yaml.load(s_str))
         p1 = ParameterSet(yaml.load(p_str))
 
@@ -204,10 +202,10 @@ class ParameterSchemeTest(unittest.TestCase):
         """
 
         s_str = """
-        item: 
-            <<ANY_KEY>>: !!python/object:parameters.validators.StrictContentTypes {val: ["",100.0] } 
+        item:
+            <<ANY_KEY>>: !!python/object:parameters.validators.StrictContentTypes {val: ["",100.0] }
         """
-        
+
         s1 = ParameterSchema(yaml.load(s_str))
         p1 = ParameterSet(yaml.load(p_str))
 
@@ -227,10 +225,10 @@ class ParameterSchemeTest(unittest.TestCase):
         """
 
         s_str = """
-        item: 
+        item:
             <<ANY_KEY>>: ["MORPH_BASE_NAME", 1.0]
         """
-        
+
         s1 = ParameterSchema(yaml.load(s_str))
         p1 = ParameterSet(yaml.load(p_str))
 
@@ -249,7 +247,7 @@ class ParameterSchemeTest(unittest.TestCase):
         """ Test the error output for an failed validation against a schema"""
 
         s1 = ParameterSchema(ps3)
-        
+
         s1.ps2.ps.a = Subclass(type=float)
         v = CongruencyValidator()
         r = False
@@ -436,7 +434,7 @@ class ParameterSchemeTest(unittest.TestCase):
         conf3['recipes']['something'] = 1
 
         assert congruent_dicts(conf1,conf3,subset=True)==False
-    
+
 
 
 
