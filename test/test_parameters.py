@@ -181,7 +181,23 @@ class ParameterSetCreateTest(unittest.TestCase):
         self.assertEqual(ps.ref1, None)
         self.assertEqual(ps.ref2, 2)
         self.assertEqual(ps.nested_refs.ref3, 4)
-    
+
+    def test_create_from_string_with_numpy(self):
+        add_parser("numpy")
+        ps1 = ParameterSet({'a': numpy.array([1., 2.])}, label="PS1")
+        ps2 = ParameterSet("{'a': array([1., 2.])}", label="PS2")
+        self.assertIsInstance(ps2.a, numpy.ndarray)
+        self.assertEqual(ps1.a.dtype, ps2.a.dtype)
+        self.assertEqual(ps1, ps2)
+
+        ps3 = ParameterSet({'a': numpy.arange(5000)*2**-3}, label="PS3")
+        # Simply using pretty() doesn't work because of the ellipsis
+        self.assertRaises(SyntaxError, lambda: ParameterSet(ps3.pretty()))
+        # 'for_saving' flag (used by `save()`) disables ellipsis
+        ps4 = ParameterSet(ps3.pretty(for_saving=True))
+        breakpoint()
+        self.assertEqual(ps4.a.dtype, ps4.a.dtype)
+
 
 class ParameterSetSaveLoadTest(unittest.TestCase):
 
@@ -292,7 +308,7 @@ class ParameterSetDiffTest(unittest.TestCase):
         ps2 = ParameterSet(self.ps.as_dict())
         ps2.yourlist = [100, 2, {'e': 55, 'f': 6}]
         self.assertEqual(ps2 - self.ps, ({'yourlist': [100, 2, {'e': 55, 'f': 6}]},
-                                         {'yourlist': [1, 2, {'e': 5, 'f': 6}]}))    
+                                         {'yourlist': [1, 2, {'e': 5, 'f': 6}]}))
 
 
 class ParameterSpaceDotAccess(unittest.TestCase):
@@ -512,12 +528,12 @@ class ParameterTableTest(unittest.TestCase):
         self.assertNotEqual(pt, ParameterTable(ts.replace('7', '8')))
 
 class ParameterReferenceTest(unittest.TestCase):
-      
+
       def test_simple_lazy_evaluation(self):
           p = ParameterReference("A")
-          p + 1 
+          p + 1
           self.assertEqual(p.evaluate({'A' : 2, 'dummy' : 3}),3)
-          
+
       def test_simple_lazy_left(self):
           p = ParameterReference("A")
           p / 10
@@ -527,27 +543,27 @@ class ParameterReferenceTest(unittest.TestCase):
           p = ParameterReference("A")
           10 / p
           self.assertEqual(p.evaluate({'A' : 5, 'dummy' : 3}),2)
-      
+
       def test_ParameterSet_value(self):
           ps = ParameterSet({'a': 1, 'b': 2}, label="PS1")
           p = ParameterReference("A")
           self.assertEqual(p.evaluate({'A' : ps, 'dummy' : 3}),ps)
           p + 1
           self.assertRaises(ValueError, p.evaluate, {'A' : ps, 'dummy' : 3})
-          
-      def test_unsupported_operation(self):          
+
+      def test_unsupported_operation(self):
           p = ParameterReference("A")
           p / "string"
           self.assertRaises(TypeError, p.evaluate, {'A' : 5, 'dummy' : 3})
-        
-     
-      def test_replace_references_with_operations(self):        
+
+
+      def test_replace_references_with_operations(self):
         ps = ParameterSet({
                               'p1' : 2,
                               'p2' : 4,
                               'p3' : ParameterReference('p1')+ParameterReference('p2')+1,
                               'p4' : ParameterReference('p3')+1,
-                              'p5' : { 
+                              'p5' : {
                                         "z" : ParameterReference('p4')+1
                                      },
                               'p6' : ParameterReference('p5')
@@ -556,8 +572,7 @@ class ParameterReferenceTest(unittest.TestCase):
         self.assertEqual(ps.p3, 7)
         self.assertEqual(ps.p4, 8)
         self.assertEqual(ps.p6.z, 9)
-        
-        
+
+
 if __name__ == '__main__':
     unittest.main()
-
