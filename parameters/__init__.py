@@ -310,6 +310,16 @@ class ParameterSet(dict):
     _basepath = None
     _basepath_set_by = None
 
+    # `namespace` is a dictionary of keywords for special parsing
+    # by ParameterSet.
+    # This can be updated to globally modify parameter parsing; for example
+    # >>> ParameterSet.namespace['array'] = np.array
+    # would allow ParameterSet to parse array arguments
+    # Users can extend the namespace either by assigning to it directly,
+    # or using one of the convenience functions at the end of this module.
+    namespace = {}
+        # Placeholder; value set at the end of the module
+
     @staticmethod
     def read_from_str(s, update_namespace=None):
         """
@@ -329,27 +339,7 @@ class ParameterSet(dict):
         This is largely the JSON (www.json.org) format, but with
         extra keywords in the namespace such as `ParameterRange`, `GammaDist`, etc.
         """
-        # Support Numpy arrays
-        np = sys.modules.get('numpy', None)  # Don't load numpy if it isn't already
-        if np is not None:
-            array = np.array
-        else:
-            def array(x): raise NameError(
-                "'array' is undefined. Ensure numpy has been loaded before "
-                "constructing the ParameterSet.")
-        global_dict = dict(ref=ParameterReference,
-                           url=ParameterSet,
-                           ParameterSet=ParameterSet,
-                           ParameterRange=ParameterRange,
-                           ParameterTable=ParameterTable,
-                           GammaDist=GammaDist,
-                           UniformDist=UniformDist,
-                           NormalDist=NormalDist,
-                           pi=math.pi,
-                           true=True,    # these are for reading JSON
-                           false=False,  # files
-                           array=array   # Numpy arrays
-                        )
+        global_dict = ParameterSet.namespace.copy()
         if update_namespace:
             global_dict.update(update_namespace)
 
@@ -632,8 +622,8 @@ class ParameterSet(dict):
         # We address this as follows:
         #   - By disabling the numpy truncation within this function
         #   - By using repr instead of str for numpy arrays
-        # Since it the str is 'pretty', we only do for saving (as opposed to
-        # displaying in an interactive session).
+        # Since the str is 'prettier', we only do this for saving (as opposed
+        # to displaying in an interactive session).
         reprtypes = ()  # list of types to print using repr() instead of str()
         npthreshold = None
         np = sys.modules.get('numpy', None)  # Don't load numpy if it isn't already
@@ -1082,3 +1072,48 @@ class ParameterTable(ParameterSet):
                 row_label + "\t" + "\t".join(["%s" % row[col]
                                               for col in column_labels]))
         return "\n".join(lines)
+
+# --- ParameterSet namespace, incl. optional parsers -------------------
+
+ParameterSet.namespace = dict(
+        ref=ParameterReference,
+        url=ParameterSet,
+        ParameterSet=ParameterSet,
+        ParameterRange=ParameterRange,
+        ParameterTable=ParameterTable,
+        GammaDist=GammaDist,
+        UniformDist=UniformDist,
+        NormalDist=NormalDist,
+        pi=math.pi,
+        true=True,    # these are for reading JSON
+        false=False,  # files
+    )
+
+def _numpy_array_parser(x):
+    np = sys.modules.get('numpy', None)  # Don't load numpy if it isn't already
+    if np is None:
+        raise RuntimeError("NumPy is not loaded: cannot parse NumPy arrays.")
+    else:
+        r = np.array(x)
+    return r
+
+# Format:
+# 2-level nested dict
+# 1st level: key=Context name. E.g. 'numpy' collects all parsers relevant for Numpy
+# 2nd level: key, value = entries to add to namespace
+_parsers = {'numpy': {'array': _numpy_array_parser}}
+
+def add_parser(context):
+    """
+    Add the parsers associated to the given context. Currently the only
+    defined context is 'numpy'.
+
+    Parsers in context 'numpy':
+        - 'array'
+    """
+    parser_dict = _parsers.get(context, None)
+    if parser_dict is None:
+        raise ValueError(
+            "'{}' is not a recognized parser context. Recognized values: {}."
+            .format(context, ", ".join(parser_dict.keys())))
+    ParameterSet.namespace.update(parser_dict)
