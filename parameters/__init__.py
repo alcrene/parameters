@@ -429,6 +429,16 @@ class ParameterSet(dict):
                 except IOError as e:
                     pstr = initialiser
                     self._url = None
+                except ValueError as e:
+                    # If one mistypes the location of a local parameter file,
+                    # execution ends up here. The message from urllib complains
+                    # an unknown url type, which is completely unhelpful.
+                    # So extend the message so that it contains both possible
+                    # failure paths, from `path.exists` and `urlopen`
+                    raise ValueError(
+                        "Unable to read parameter file at location '{}'. "
+                        "The path or URL is likely incorrect."
+                        .format(initialiser))
                 else:
                     f.close()
 
