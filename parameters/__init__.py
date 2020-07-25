@@ -141,7 +141,6 @@ class Parameter(object):
             s += " %s" % self.units
         return s
 
-
 class ParameterRange(Parameter):
     """
     A class for specifying a list of possible values for a given parameter.
@@ -359,6 +358,20 @@ class ParameterSet(dict):
         except TypeError as e:
             raise SyntaxError(
                 "Invalid string for ParameterSet definition: %s" % e)
+
+        # If there are any Parameter objects in the parameter set, and they
+        # did not specify a name, assign the one from the key.
+        if D:
+            # D is still a plain dict, so we can't use `.flat` to reach deeper
+            # parameters => Define recursive function
+            def default_parameter_names(D):
+                for fullname, val in D.items():
+                    if isinstance(val, dict):
+                        default_parameter_names(D)
+                    elif isinstance(val, Parameter) and val.name == "":
+                        val.name = fullname.rsplit('.', 1)[-1]
+            default_parameter_names(D)
+
         return D or {}
 
     @staticmethod
@@ -1078,6 +1091,7 @@ class ParameterTable(ParameterSet):
 ParameterSet.namespace = dict(
         ref=ParameterReference,
         url=ParameterSet,
+        Parameter=Parameter,
         ParameterSet=ParameterSet,
         ParameterRange=ParameterRange,
         ParameterTable=ParameterTable,
