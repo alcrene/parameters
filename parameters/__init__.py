@@ -306,6 +306,7 @@ class ParameterSet(dict):
                                 'flatten', 'non_parameter_attributes']
     invalid_names = ['parameters', 'names']  # should probably add dir(dict)
 
+    default_basepath = ""
     _basepath = None
     _basepath_set_by = None
 
@@ -396,7 +397,7 @@ class ParameterSet(dict):
             ParameterSet._basepath = basepath
             ParameterSet._basepath_set_by = self
         elif ParameterSet._basepath is None:
-            ParameterSet._basepath = ""
+            ParameterSet._basepath = self.default_basepath
             ParameterSet._basepath_set_by = self
 
         def walk(d, label):
