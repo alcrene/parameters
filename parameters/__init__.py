@@ -367,7 +367,7 @@ class ParameterSet(dict):
             def default_parameter_names(D):
                 for fullname, val in D.items():
                     if isinstance(val, dict):
-                        default_parameter_names(D)
+                        default_parameter_names(val)
                     elif isinstance(val, Parameter) and val.name == "":
                         val.name = fullname.rsplit('.', 1)[-1]
             default_parameter_names(D)
